@@ -3,6 +3,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit, unquote
 import shutil
+import os
+import json
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
@@ -18,6 +20,10 @@ class AssetParser(HTMLParser):
             self.assets.append(attrs["src"])
         if tag == "link" and attrs.get("rel") == "stylesheet" and attrs.get("href"):
             self.assets.append(attrs["href"])
+
+api_key = os.environ.get("PHOTO_API_KEY", "").strip()
+if not api_key:
+    raise ValueError("Set PHOTO_API_KEY in the build environment before building.")
 
 parser = AssetParser()
 parser.feed((ROOT / "index.html").read_text())
@@ -40,6 +46,12 @@ if DIST.exists():
 DIST.mkdir()
 for name in ("index.html", "styles.css", "app.js"):
     shutil.copy2(ROOT / name, DIST / name)
+app_path = DIST / "app.js"
+app_source = app_path.read_text()
+placeholder = '"__PHOTO_API_KEY_AT_BUILD__"'
+if app_source.count(placeholder) != 1:
+    raise ValueError("Expected one API key build placeholder in app.js")
+app_path.write_text(app_source.replace(placeholder, json.dumps(api_key)))
 shutil.copytree(ROOT / "sdk", DIST / "sdk", ignore=shutil.ignore_patterns(
     ".DS_Store", ".git", ".env", ".env.*", "__pycache__", "*.pyc", "README.md"
 ))

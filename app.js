@@ -1,14 +1,15 @@
 "use strict";
+const PHOTO_API_KEY = "__PHOTO_API_KEY_AT_BUILD__";
 const el = id => document.getElementById(id);
 function client() {
-  const key = el("api-key").value.trim();
-  if (!key) throw new Error("Enter your API key first.");
+  const key = PHOTO_API_KEY;
+  if (!key || key.startsWith("__PHOTO_API_KEY_")) throw new Error("Photo album configuration is missing. Please contact the site owner.");
   return apigClientFactory.newClient({apiKey: key});
 }
 function errorMessage(error) {
   const response = error && error.response;
   const message = response && response.data && response.data.message;
-  return message || (error && error.message) || "Request failed. Check the API key, network, and API CORS settings.";
+  return message || (error && error.message) || "Request failed. Please try again shortly.";
 }
 function imageUrl(result) {
   const value = typeof result === "string" ? result : result.url || result.presignedUrl || result.presigned_url || result.imageUrl;

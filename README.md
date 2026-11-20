@@ -11,7 +11,7 @@ A static photo album with natural-language search, image results, JPEG/PNG uploa
 - API base: https://s0khdyagpg.execute-api.us-east-1.amazonaws.com/test
 - Region: `us-east-1`
 
-Enter the photo-album API key in the page. It stays in the current page's memory and is not stored by this application. Do not commit the key or AWS credentials. The photo bucket remains private; search results use temporary presigned image URLs.
+Visitors can search and upload without entering a key. Both methods use the same API key, injected into generated app.js from the PHOTO_API_KEY build environment variable. Keep the value out of source control and build logs. The deployed key is public and visible in browser assets and requests; it is not user authentication. Do not commit AWS credentials. The photo bucket remains private; search results use temporary presigned image URLs.
 
 ## Build locally
 
@@ -19,6 +19,7 @@ Requires Python 3.12+ and Node.js 22 in CodeBuild. Local equivalent commands:
 
 ```bash
 node --check app.js
+# PHOTO_API_KEY must already be set in your environment.
 python3 scripts/build.py
 ```
 
@@ -31,6 +32,8 @@ Create a pipeline in us-east-1 with queued execution and these actions:
 1. Source: GitHub App connection with the AWS Connector actually installed for this repository, main branch, push trigger for main, default ZIP source artifact.
 2. Build: CodeBuild project reading root `buildspec.yml`, using an AWS managed image supporting Python 3.12 and Node.js 22. Choose the source artifact as input and produce BuildArtifact.
 3. Deploy: Amazon S3, bucket `cc-s3-b1-36234`, input BuildArtifact, with Extract file before deploy enabled. Leave deployment path blank to place index.html at the bucket root. Do not select the private photo bucket or the CloudFormation demonstration bucket.
+
+Before the first build, configure PHOTO_API_KEY on photo-album-frontend-build under Environment → Additional configuration → Environment variables. The build fails if it is missing and never prints the key.
 
 CodeBuild builds the static files; the S3 deploy action uploads them. Unlike the backend, this buildspec does not deploy in post_build. Configure the pipeline service role to use its connection, read pipeline artifacts and put website objects in the destination bucket. The CodeBuild role needs build logs and artifact access. No Lambda permissions are needed for this frontend build role.
 
